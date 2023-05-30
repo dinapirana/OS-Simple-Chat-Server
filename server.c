@@ -631,6 +631,112 @@ int main() {
 
 
     }
+    
+    if (listen(server_socket, MAX_CLIENTS) < 0) {
+
+
+
+        perror("Ka ndodhur nje gabim gjate lidhjes se klienteve");
+
+
+
+        exit(1);
+
+}
+
+
+
+    printf("Serveri ka filluar, duke pritur per lidhje te klienteve...\n");
+
+
+
+
+
+    int address_length = sizeof(struct sockaddr_in);
+
+
+
+    while (1) {
+
+
+
+        client_socket = accept(server_socket, (struct sockaddr*)&client_address, (socklen_t*)&address_length);
+
+
+
+        if (client_socket < 0) {
+
+  perror("Ka ndodhur nje gabim gjate pranimit te lidhjes se klienteve");
+
+
+
+            exit(1);
+
+
+
+        }
+
+
+
+        sem_wait(&shared_memory->client_count_sem);
+
+
+
+        shared_memory->client_info[shared_memory->client_count].socket = client_socket;
+
+
+
+        shared_memory->client_info[shared_memory->client_count].address = client_address;
+
+
+
+        ThreadArgs* args = (ThreadArgs*)malloc(sizeof(ThreadArgs));
+
+
+
+        args->client_socket = client_socket;
+
+
+
+       args->client_id = client_id++;
+
+
+
+        args->shared_memory = shared_memory;
+
+
+
+        if (pthread_create(&shared_memory->thread_ids[shared_memory->client_count], NULL, (void*)handle_client, (void*)args) != 0) {
+
+
+
+            perror("Ka ndodhur nje gabim gjate krijimit te thread - it per klient");
+
+
+
+            exit(1);
+
+        }
+
+        printf("Thread eshte krijuar per klientin %d: %lu\n", client_id, shared_memory->thread_ids[shared_memory->client_count]);
+
+        shared_memory->client_count++;
+
+        sem_post(&shared_memory->client_count_sem);
+
+    }
+
+    shmdt(shared_memory);
+
+    shmctl(shared_memory_id, IPC_RMID, NULL);
+
+    close(server_socket);
+
+
+
+    return 0;
+
+}
 
 
 
