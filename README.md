@@ -4,4 +4,11 @@ Projekti ynë synon të implementojë një server të thjeshtë bisedash që mun
 Qëllimi kryesor i këtij projekti është të krijohet një mjedis bashkëpunimi për klientët.
 
 Me përfundimin e këtij projekti, pritet të kemi një server të funksionueshëm të bisedave që mund të shfrytëzohet për qëllime të ndryshme të komunikimit në mes të klientëve. 
+
 Përdoret gjuha programuese C.
+
+Anëtarët e grupit punues:
+Blerta Krasniqi
+Blerona Jashanica
+Diellza Prebreza
+Dina Pirana
