@@ -448,3 +448,189 @@ void handle_client(void* arguments) {
 
 
 }
+int main() {
+
+
+
+    int server_socket;
+
+
+
+    int client_socket;
+
+
+
+    int client_count = 0;
+
+
+
+    struct sockaddr_in server_address, client_address;
+
+
+
+
+
+
+
+    pthread_t thread_ids[MAX_CLIENTS];
+
+
+
+
+
+
+
+    sem_t client_count_sem;
+
+
+
+    SharedMemory* shared_memory;
+
+
+
+
+
+
+
+    int shared_memory_id;
+
+
+
+    shared_memory_id = shmget(IPC_PRIVATE, sizeof(SharedMemory), IPC_CREAT | 0666);
+
+
+
+    if (shared_memory_id < 0) {
+
+
+
+    perror("Ka ndodhur nje gabim gjate krijimit te shared memory segment");
+
+
+
+    exit(1);
+
+
+
+ }
+
+
+
+    shared_memory = (SharedMemory*)shmat(shared_memory_id, NULL, 0);
+
+
+
+
+
+
+
+    if (shared_memory == (void*)-1) {
+
+
+
+        perror("Ka ndodhur nje gabim gjate bashkangjitjes se shared memory segment");
+
+
+
+       exit(1);
+
+
+
+    }
+
+    shared_memory->message_queue = msgget(IPC_PRIVATE, IPC_CREAT | 0666);
+
+
+
+    if (shared_memory->message_queue < 0) {
+
+
+
+        perror("Ka ndodhur nje gabim ne krijimin e message queue");
+
+
+
+        exit(1);
+
+
+
+    }
+
+    shared_memory->client_count = 0;
+
+
+
+    sem_init(&shared_memory->client_count_sem, 1, 1);
+
+
+
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+
+
+    if (server_socket < 0) {
+
+
+
+        perror("Ka ndodhur gabim ne krijimin e server socket");
+
+
+
+       exit(1);
+
+
+
+    }
+
+
+
+    int opt = 1;
+
+
+
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+
+
+
+           perror("Ka ndodhur nje gabim gjate vendosjes se opsioneve te server socket");
+
+
+
+        exit(1);
+
+
+
+    }
+
+
+
+    memset((char*)&server_address, 0, sizeof(server_address));
+
+
+
+    server_address.sin_family = AF_INET;
+
+
+
+    server_address.sin_addr.s_addr = INADDR_ANY;
+
+
+
+    server_address.sin_port = htons(8888);
+
+
+
+    if (bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+
+
+
+        perror("Ka ndodhur nje gabim ne lidhjen e server socket");
+
+  exit(1);
+
+
+
+    }
+
+
+
