@@ -169,6 +169,8 @@ void handle_client(void* arguments) {
 
 
         gettimeofday(&tv, NULL);
+          
+          
 
 
 
@@ -222,4 +224,227 @@ void handle_client(void* arguments) {
 
 
 
-     }
+     } else if (strncmp(buffer, "/msg", 4) == 0) {
+
+
+
+
+
+           // Komanda '/msg'
+
+
+
+           printf("[%s] Klienti %d - Mesazhi privat\n", timestamp, client_id+1);
+
+
+
+            fflush(stdout);
+
+            char* recipient = strtok(buffer, " ");
+
+            char* message = strtok(NULL, "");
+
+
+
+
+
+            sem_wait(&shared_memory->client_count_sem);
+
+
+
+
+
+            int recipient_id = atoi(recipient + 1);
+
+
+
+
+
+            if (recipient_id >= 0 && recipient_id < shared_memory->client_count) {
+
+               
+
+
+
+                Message msg;
+
+
+
+                msg.mtype = recipient_id + 1; // Set message type to recipient's client ID
+
+                strncpy(msg.mtext, message, BUFFER_SIZE);
+
+                if (msgsnd(shared_memory->message_queue, &msg, sizeof(msg.mtext), 0) < 0) {
+
+
+
+                    perror("Ka ndodhur nje gabim gjate dergimit te mesazhit privat");
+
+
+
+                    exit(1);
+
+                }
+
+
+
+            } else {
+
+
+
+                printf("ID jo valide: %d\n", recipient_id);
+
+
+
+                fflush(stdout);
+
+
+
+            }
+
+
+
+            sem_post(&shared_memory->client_count_sem);
+
+
+
+        } else if (strncmp(buffer, "/quit", 5) == 0) {
+
+
+
+
+
+            //Komanda '/quit'
+
+
+
+
+
+            printf("[%s] Klienti %d - u shkyc\n", timestamp, client_id+1);
+
+
+
+            fflush(stdout);
+
+
+
+
+
+
+
+
+
+           sem_wait(&shared_memory->client_count_sem);
+
+
+
+            close(client_socket);
+
+
+
+
+
+            if (client_id < shared_memory->client_count - 1) {
+
+
+
+                shared_memory->client_info[client_id] = shared_memory->client_info[shared_memory->client_count - 1];
+
+
+
+                shared_memory->thread_ids[client_id] = shared_memory->thread_ids[shared_memory->client_count - 1];
+
+            }
+
+
+
+            shared_memory->client_count--;
+
+            sem_post(&shared_memory->client_count_sem);
+
+
+
+
+
+            break;
+
+
+
+        } else {
+
+
+
+
+
+                printf("[%s] Klienti %d - Mesazhi: %s\n", timestamp, client_id+1, buffer);
+
+
+
+                fflush(stdout);
+
+
+
+               sem_wait(&shared_memory->client_count_sem);
+
+
+
+               for (int i = 0; i < shared_memory->client_count; i++) {
+
+ 
+
+                   if (shared_memory->client_info[i].socket != client_socket) {
+
+
+
+                    char message_with_sender[2 * BUFFER_SIZE];
+
+
+
+                   snprintf(message_with_sender, sizeof(message_with_sender), "Client %d: %s", client_id+1, buffer);
+
+
+
+
+
+
+
+                  if (send(shared_memory->client_info[i].socket, message_with_sender, strlen(message_with_sender), 0) < 0) {
+
+   
+
+                   perror("Ka ndodhur nje gabim gjate dergimit te mesazheve te klienti");
+
+
+
+                    exit(1);
+
+ 
+
+        }
+
+
+
+    }
+
+
+
+}
+
+            sem_post(&shared_memory->client_count_sem);
+
+      }
+
+
+
+        memset(buffer, 0, sizeof(buffer));
+
+    }
+
+    free(arguments);
+
+    pthread_exit(NULL);
+
+
+
+
+}
